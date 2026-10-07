@@ -817,7 +817,10 @@ export class Game {
 // last `reserve` pixels may be covered by the text box: centre the room in the space above it if it fits,
 // otherwise keep the player in the middle of that space without scrolling past the room's edges.
 function fitRoom(follow, view, size, reserve) {
-  if (size + reserve <= view) return -Math.floor((view - reserve - size) / 2);
+  // Fits on screen: centred, always (the owner's choice, 2026-10-07). The open text box may cover the bottom edge
+  // of a room on a short screen, but the room never scrolls away, leaving black space below it.
+  if (size <= view) return -Math.floor((view - size) / 2);
+  // Bigger than the screen: follow the player, keeping them above the text box.
   return clamp(follow + reserve / 2, 0, size + reserve - view);
 }
 

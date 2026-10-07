@@ -82,6 +82,11 @@ export class Input {
     for (const holds of Object.values(this.buttonHolds)) holds.delete(id);
   }
 
+  /** Lets go of the held directions: a key still held then does nothing until it is pressed again. */
+  releaseDirections() {
+    this.dirHolds.clear();
+  }
+
   releaseAll() {
     this.dirHolds.clear();
     for (const holds of Object.values(this.buttonHolds)) holds.clear();

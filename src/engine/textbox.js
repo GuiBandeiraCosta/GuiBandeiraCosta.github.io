@@ -67,7 +67,11 @@ export class TextBox {
       this.updateAnswer();
       return;
     }
-    const advance = this.input.consume('a') || this.input.consume('b');
+    // Down turns the page too. The key is let go of, so if this page was the last one, holding Down doesn't also walk
+    // (often off the exit mat, out of the room).
+    const down = this.input.consume('dir') === 'down';
+    if (down) this.input.releaseDirections();
+    const advance = this.input.consume('a') || this.input.consume('b') || down;
     if (this.shown < this.text.length) {
       if (advance) this.shown = this.text.length;
       else if (++this.ticks >= TEXT_TICKS_PER_CHAR) {

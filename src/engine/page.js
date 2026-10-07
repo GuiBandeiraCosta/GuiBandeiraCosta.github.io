@@ -17,7 +17,10 @@ export function setupPage() {
     document.body.classList.toggle('touch-ui', on);
   };
   showTouch(matchMedia('(pointer: coarse)').matches);
-  window.addEventListener('touchstart', () => showTouch(true), { once: true, passive: true });
+  // Touch shows them; a mouse hides them again (some computers say "coarse pointer" because they have, or might
+  // have, a touchscreen, and the controls would then cover the screen and squeeze the rooms).
+  window.addEventListener('touchstart', () => showTouch(true), { passive: true });
+  window.addEventListener('pointerdown', (e) => e.pointerType === 'mouse' && showTouch(false));
 
   return {
     canvas,
