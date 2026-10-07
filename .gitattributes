@@ -1,0 +1,5 @@
+# Same line endings on every computer; the Stockfish engine and the images are binary.
+* text=auto eol=lf
+*.wasm binary
+*.png binary
+*.woff2 binary

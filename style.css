@@ -1,0 +1,1129 @@
+@font-face {
+  font-family: 'm5x7';
+  src: url('fonts/m5x7.woff2') format('woff2');
+  font-display: swap;
+}
+
+:root {
+  /* Size of one game pixel in CSS pixels. The game updates it whenever the window changes. */
+  --px: 4px;
+  /* Pixel size of the other HTML boxes: about 2 CSS pixels, rounded to whole device pixels by the game. */
+  --ui: 2px;
+  --ink: #34303e;
+  --paper: #fbfbf4;
+  /* A pixel-art frame (dark outline, light-blue inner line, paper fill) used as a 9-slice border. */
+  --frame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7' shape-rendering='crispEdges'%3E%3Cpath fill='%233a3f58' d='M1 0h5v1H1zM1 6h5v1H1zM0 1h1v5H0zM6 1h1v5H6z'/%3E%3Cpath fill='%23a9bee3' d='M1 1h5v1H1zM1 5h5v1H1zM1 2h1v3H1zM5 2h1v3H5z'/%3E%3Cpath fill='%23fbfbf4' d='M2 2h3v3H2z'/%3E%3C/svg%3E");
+  --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath fill='%23e0503c' d='M0 0h7v1H0zM1 1h5v1H1zM2 2h3v1H2zM3 3h1v1H3z'/%3E%3C/svg%3E");
+  --cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'%3E%3Cpath fill='%233c3c46' d='M0 0h1v7H0zM1 1h1v5H1zM2 2h1v3H2zM3 3h1v1H3z'/%3E%3C/svg%3E");
+  --controls-height: 168px;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: #16161e;
+  color: var(--paper);
+  font-family: 'm5x7', ui-monospace, monospace;
+  font-size: calc(var(--ui) * 16);
+  line-height: 1;
+  -webkit-text-size-adjust: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ game */
+
+.game {
+  position: fixed;
+  inset: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+  image-rendering: pixelated;
+}
+
+/* Keyboard focus on the game: a yellow ring with a dark edge, visible on grass, paths and dark rooms. */
+.game:has(#screen:focus-visible)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 4px solid #16161e;
+  outline: 4px solid #ffd23f;
+  outline-offset: -8px;
+  pointer-events: none;
+}
+
+/* Pixel-framed boxes (name plate, buttons, hint), sized in --ui pixels so the font stays crisp. */
+.plate {
+  margin: 0;
+  padding: calc(var(--ui) * 3) calc(var(--ui) * 7) calc(var(--ui) * 5);
+  border: calc(var(--ui) * 3) solid transparent;
+  border-image: var(--frame) 3 fill / calc(var(--ui) * 3) stretch;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1;
+}
+
+button.plate,
+a.plate {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button.plate:hover {
+  filter: brightness(0.96);
+}
+
+button.plate:focus-visible,
+a.plate:focus-visible,
+.sheet a:focus-visible {
+  outline: 4px solid #ffd23f;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px #16161e; /* dark edge: keeps the yellow ring visible on grass and on paper */
+}
+
+/* ------------------------------------------------------------------ text box (sized in game pixels) */
+
+.textbox {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--px) * 6);
+  transform: translateX(-50%);
+  width: min(calc(100% - var(--px) * 8), calc(var(--px) * 232));
+  min-height: calc(var(--px) * 42);
+  padding: calc(var(--px) * 6) calc(var(--px) * 10) calc(var(--px) * 8);
+  border: calc(var(--px) * 3) solid transparent;
+  border-image: var(--frame) 3 fill / calc(var(--px) * 3) stretch;
+  color: #3c3c46;
+  font-size: calc(var(--px) * 16);
+  line-height: calc(var(--px) * 13);
+  text-shadow: var(--px) var(--px) 0 #d8d8ce;
+  cursor: pointer;
+}
+
+.textbox[hidden] {
+  display: none;
+}
+
+.textbox__text {
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+.textbox__rest {
+  visibility: hidden;
+}
+
+.textbox__arrow {
+  position: absolute;
+  right: calc(var(--px) * 7);
+  bottom: calc(var(--px) * 5);
+  width: calc(var(--px) * 7);
+  height: calc(var(--px) * 4);
+  background: var(--arrow) center / 100% 100% no-repeat;
+  visibility: hidden;
+}
+
+.textbox.is-done .textbox__arrow {
+  visibility: visible;
+  animation: bob 533ms steps(1, end) infinite;
+}
+
+/* The answers to a question (YES / NO): a small box above the text box's right corner, with a cursor.
+   Each answer's button spans the whole row (cursor column included), so a tap beside a word still picks it. */
+.textbox__choices {
+  position: absolute;
+  right: calc(var(--px) * -3);
+  bottom: calc(100% + var(--px) * 2);
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--px) * 44);
+  padding: calc(var(--px) * 4) 0 calc(var(--px) * 5);
+  border: calc(var(--px) * 3) solid transparent;
+  border-image: var(--frame) 3 fill / calc(var(--px) * 3) stretch;
+}
+
+.textbox__choices[hidden] {
+  display: none;
+}
+
+.textbox__choice {
+  position: relative;
+  padding: 0 calc(var(--px) * 10) 0 calc(var(--px) * 14);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: calc(var(--px) * 13);
+  text-align: left;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+
+.textbox__choice.is-selected::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--px) * 5);
+  top: calc(var(--px) * 3);
+  width: calc(var(--px) * 4);
+  height: calc(var(--px) * 7);
+  background: var(--cursor) center / 100% 100% no-repeat;
+}
+
+@keyframes bob {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(var(--px)); }
+  50% { transform: translateY(calc(var(--px) * 2)); }
+  75% { transform: translateY(var(--px)); }
+}
+
+/* ------------------------------------------------------------------ hint, header, errors */
+
+.hint {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  width: fit-content;
+  margin: 0 auto;
+  text-align: center;
+  text-wrap: balance;
+  opacity: 0;
+  transition: opacity 400ms;
+  pointer-events: none;
+}
+
+.hint.is-visible {
+  opacity: 1;
+}
+
+.hint:empty {
+  display: none;
+}
+
+.hud {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: max(12px, env(safe-area-inset-left, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.hud__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud__button {
+  flex: none;
+}
+
+.page-error {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 20;
+  width: min(90vw, 640px);
+  transform: translate(-50%, -50%);
+  line-height: 1.1;
+}
+
+/* ------------------------------------------------------------------ touch controls */
+
+.touch {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 max(18px, env(safe-area-inset-right, 0px)) max(22px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  pointer-events: none;
+}
+
+.touch[hidden] {
+  display: none;
+}
+
+.dpad,
+.button {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.dpad {
+  width: 136px;
+  height: 136px;
+}
+
+.dpad svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dpad__edge {
+  fill: rgba(16, 16, 24, 0.7);
+}
+
+.dpad__face {
+  fill: rgba(70, 70, 92, 0.72);
+}
+
+.dpad__arm {
+  fill: rgba(255, 255, 255, 0.28);
+  opacity: 0;
+}
+
+.dpad__arrow {
+  fill: rgba(255, 255, 255, 0.75);
+}
+
+.dpad[data-dir='up'] .dpad__arm--up,
+.dpad[data-dir='down'] .dpad__arm--down,
+.dpad[data-dir='left'] .dpad__arm--left,
+.dpad[data-dir='right'] .dpad__arm--right {
+  opacity: 1;
+}
+
+.buttons {
+  position: relative;
+  width: 148px;
+  height: 128px;
+}
+
+.button {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 3px solid rgba(16, 16, 24, 0.75);
+  border-radius: 50%;
+  background: rgba(176, 52, 72, 0.78);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 32px;
+  box-shadow: inset -3px -4px 0 rgba(0, 0, 0, 0.25);
+}
+
+.button.is-pressed {
+  background: rgba(210, 80, 100, 0.9);
+  box-shadow: inset 2px 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.button-a {
+  top: 0;
+  right: 0;
+}
+
+.button-b {
+  bottom: 0;
+  left: 0;
+}
+
+/* With touch controls, keep the text box and hint above them. */
+.touch-ui .textbox {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--controls-height));
+}
+
+.touch-ui .hint {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--controls-height));
+}
+
+/* Landscape phones: above the controls is the middle of the screen, where the player and the door are,
+   so the hint goes in the gap between the D-pad and the A/B buttons instead. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .touch-ui .hint {
+    left: calc(max(18px, env(safe-area-inset-left, 0px)) + 144px);
+    right: calc(max(18px, env(safe-area-inset-right, 0px)) + 156px);
+    bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Very short portrait phones: no room above the controls either, so show the hint under the name plate. */
+@media (max-height: 520px) and (orientation: portrait) {
+  .touch-ui .hint {
+    top: calc(max(12px, env(safe-area-inset-top, 0px)) + 72px);
+    bottom: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ dialogs (the link card, the ARC sheet, the chess boards) */
+
+.sheet {
+  width: min(92vw, 680px);
+  max-width: none; /* the browser's own cap for dialogs (100% - 2em - 6px) made them narrower than this on phones */
+  max-height: 86vh;
+  max-height: 86dvh; /* on phones: the height that is really visible, between the browser's toolbars */
+  padding: 18px 28px 24px;
+  border: calc(var(--ui) * 3) solid transparent;
+  border-image: var(--frame) 3 fill / calc(var(--ui) * 3) stretch;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.15;
+  user-select: text;
+}
+
+.sheet::backdrop {
+  background: rgba(10, 10, 18, 0.72);
+}
+
+.sheet h1,
+.sheet h2 {
+  margin: 8px 0 12px;
+  font-weight: normal;
+  line-height: 1;
+}
+
+.sheet h1 {
+  font-size: calc(var(--ui) * 32);
+}
+
+.sheet h1:focus {
+  outline: none; /* it only takes focus so the sheet opens at the top */
+}
+
+.sheet h2 {
+  margin-top: 28px;
+  font-size: calc(var(--ui) * 24);
+}
+
+.sheet p {
+  margin: 0 0 12px;
+}
+
+.sheet a {
+  color: #2f5fb3;
+}
+
+.sheet form {
+  margin-top: 24px;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------------ link card (page.js showLink) */
+
+.link-card {
+  width: min(92vw, 560px);
+}
+
+.sheet.link-card h2 {
+  margin-top: 8px;
+}
+
+.link-card h2:focus {
+  outline: none; /* it only takes focus so the card opens at the top */
+}
+
+.link-card__go {
+  display: inline-block;
+  color: var(--ink);
+}
+
+.link-card__url {
+  color: #6c6474;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------ ARC puzzle sheet (src/engine/arcviewer.js) */
+
+.arc {
+  width: min(96vw, 920px);
+  max-height: 94vh;
+  max-height: 94dvh;
+}
+
+/* One column on phones (the examples first: they hold the rule); the examples beside the answer on wider screens. */
+.arc__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'head' 'examples' 'test' 'foot';
+  gap: 16px;
+}
+
+@media (min-width: 760px) {
+  .arc__layout {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-areas: 'head head' 'examples test' 'foot foot';
+    column-gap: 32px;
+  }
+}
+
+.arc__head {
+  grid-area: head;
+  position: relative;
+}
+
+.arc__examples {
+  grid-area: examples;
+}
+
+.arc__test {
+  grid-area: test;
+}
+
+.sheet.arc form.arc__foot {
+  grid-area: foot;
+  margin: 0;
+}
+
+.sheet.arc h2 {
+  margin: 0 0 6px;
+  font-size: calc(var(--ui) * 24);
+}
+
+.arc h2:focus {
+  outline: none; /* it only takes focus so the sheet opens at the top */
+}
+
+.sheet.arc h3 {
+  margin: 0 0 10px;
+  font-size: inherit;
+  font-weight: normal;
+  color: #8a3b2a;
+}
+
+.sheet.arc .arc__intro {
+  margin: 0;
+}
+
+.arc__pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arc__pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.arc__figure {
+  margin: 0;
+}
+
+/* Each picture is drawn at 7 px per cell and shown twice as big, crisply. */
+.arc__picture {
+  display: block;
+  width: calc((var(--columns) * 7 + 1) * 2px);
+  max-width: 100%;
+  image-rendering: pixelated;
+}
+
+.arc__arrow {
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 11px solid #8c8496;
+}
+
+/* The answer: one button per cell, big enough to tap. */
+.arc__answer {
+  --cell: clamp(26px, calc((min(96vw, 920px) - 190px) / var(--columns) / 2), 40px);
+  display: grid;
+  grid-template-columns: repeat(var(--columns), var(--cell));
+  gap: 1px;
+  padding: 1px;
+  background: #444444;
+}
+
+.arc__cell {
+  position: relative;
+  width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  border: 0;
+  background: var(--color);
+  color: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.arc__cell:focus-visible {
+  z-index: 1;
+  outline: 3px solid #ffd23f;
+  outline-offset: -3px;
+}
+
+.arc__cell.is-near {
+  box-shadow: inset 0 0 0 3px #ffffff, inset 0 0 0 5px #16161e;
+}
+
+.arc__palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.arc__swatch {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  background: var(--color);
+  color: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.arc__swatch[aria-pressed='true'] {
+  outline: 3px solid #ffd23f;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--ink);
+}
+
+/* "Show the colour numbers": the digits ARC itself uses, for anyone who finds the colours hard to tell apart. */
+.shows-numbers .arc__cell,
+.shows-numbers .arc__swatch {
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000;
+}
+
+.arc__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.arc__tools button {
+  min-height: 44px;
+}
+
+.arc__tools button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sheet.arc .arc__status {
+  min-height: 1.15em;
+  margin: 12px 0;
+  color: #2f5fb3;
+}
+
+.arc__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arc__options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.arc__options input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.arc__strip {
+  margin-top: 12px;
+}
+
+.arc__line {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 4px 3px 8px;
+}
+
+.arc__square {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: var(--color);
+  outline: 1px solid #444444;
+}
+
+.arc__square.is-here {
+  outline: 3px solid #ffd23f;
+}
+
+.arc__square.is-near {
+  outline: 3px solid #2f5fb3;
+}
+
+.arc__close {
+  display: none; /* only on narrow screens (below), where "Back to the room" is at the end of a long column */
+}
+
+@media (max-width: 759px) {
+  .arc {
+    padding-inline: 16px;
+  }
+
+  .sheet.arc h2 {
+    padding-right: 48px;
+    font-size: inherit; /* stays a heading, but no longer fills the screen */
+  }
+
+  .arc form.arc__close {
+    display: block;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    margin: 0;
+  }
+
+  .arc__close button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .arc__close svg {
+    width: calc(var(--ui) * 7);
+    height: calc(var(--ui) * 7);
+    fill: currentColor;
+    shape-rendering: crispEdges;
+  }
+}
+
+/* ------------------------------------------------------------------ chess game viewer (src/engine/chessviewer.js) */
+
+.viewer {
+  width: min(96vw, 1040px);
+  max-height: 94vh;
+  max-height: 94dvh;
+}
+
+/* Three layouts, set by the media queries at the end of this section (chessviewer.js fit() sizes the board to match):
+   narrow screens: one column; big screens: the heading on top, then the board beside the side column;
+   short wide screens (phones on their side): the heading moves beside the board. */
+.viewer__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.sheet.viewer h2 {
+  margin: 0 0 4px;
+  font-size: calc(var(--ui) * 24); /* stays a heading on phones too */
+}
+
+.viewer h2:focus {
+  outline: none; /* it only takes focus so the dialog opens at the top */
+}
+
+.viewer__head p {
+  margin: 0 0 4px;
+}
+
+.viewer__head > :last-child {
+  margin-bottom: 0;
+}
+
+.viewer__close {
+  display: none; /* only on narrow screens (below), where "Back to the room" is at the end of a long column */
+}
+
+.viewer__meta {
+  color: #6c6474;
+}
+
+.viewer__swatch {
+  display: inline-block;
+  width: calc(var(--ui) * 6);
+  height: calc(var(--ui) * 6);
+  margin: 0 calc(var(--ui) * 3) 0 calc(var(--ui) * 1);
+  border: var(--ui) solid var(--ink);
+}
+
+.viewer__swatch--white {
+  background: #f2e8d2;
+}
+
+.viewer__swatch--black {
+  background: #3a3446;
+}
+
+.viewer__board {
+  display: block;
+  justify-self: center;
+  align-self: start;
+  image-rendering: pixelated;
+}
+
+.viewer__side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.viewer__side > p {
+  margin: 0;
+}
+
+.viewer__status {
+  font-size: calc(var(--ui) * 24);
+}
+
+.viewer__comment {
+  min-height: 1.15em;
+  color: #8a3b2a;
+}
+
+.viewer__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.viewer__controls button {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0;
+}
+
+.viewer__controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.viewer__controls svg {
+  width: calc(var(--ui) * 7);
+  height: calc(var(--ui) * 7);
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+
+.viewer__moves {
+  position: relative; /* so the current move can be scrolled into view inside the list */
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 30vh;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+.viewer__pair {
+  white-space: nowrap;
+}
+
+.viewer__moves button {
+  padding: 0 calc(var(--ui) * 2);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.viewer__moves button:hover {
+  background: #e8dcc0;
+}
+
+.viewer__moves button.is-current {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.viewer__moves button.has-comment {
+  text-decoration: underline dotted #8a3b2a;
+}
+
+.viewer__moves button:focus-visible {
+  outline: 3px solid #2f5fb3;
+}
+
+.viewer__number {
+  margin-left: calc(var(--ui) * 3);
+  color: #8a8092;
+}
+
+.viewer__keys {
+  color: #8a8092;
+}
+
+.viewer__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.viewer__foot form {
+  margin: 0 0 0 auto;
+}
+
+.viewer__foot button {
+  white-space: nowrap;
+}
+
+/* The layouts. They come after the rules above, so they win over them. */
+
+@media (max-width: 759px) {
+  .viewer {
+    padding-inline: 16px; /* more room for the board and one row of buttons */
+  }
+
+  .sheet.viewer h2 {
+    padding-right: 44px; /* room for the close button */
+    font-size: inherit;
+  }
+
+  /* A close button in the top corner, so phones don't have to scroll down to leave. */
+  .viewer form.viewer__close {
+    display: block;
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    margin: 0;
+  }
+
+  .viewer__close button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .viewer__close svg {
+    width: calc(var(--ui) * 7);
+    height: calc(var(--ui) * 7);
+    fill: currentColor;
+    shape-rendering: crispEdges;
+  }
+
+  /* One column, in the order a visitor needs it: the heading, the board, the buttons, the move and its comment,
+     then the rest. The parts of the heading and of the side column each take their own place in it. */
+  .viewer__head,
+  .viewer__side {
+    display: contents;
+  }
+
+  .viewer__controls {
+    order: 1;
+    gap: 4px;
+  }
+
+  .viewer__controls button {
+    min-width: 44px;
+  }
+
+  .viewer__status {
+    order: 2;
+    font-size: inherit;
+  }
+
+  .viewer__comment {
+    order: 3;
+  }
+
+  .viewer__moves {
+    order: 4;
+  }
+
+  .viewer__players,
+  .viewer__meta {
+    order: 5;
+  }
+
+  .viewer__foot {
+    order: 6;
+  }
+}
+
+@media (min-width: 760px) {
+  .viewer__layout {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(var(--board-size, auto), auto); /* the side is at least as tall as the board */
+    grid-template-areas: 'head head' 'board side';
+    column-gap: 28px;
+  }
+
+  .viewer__head {
+    grid-area: head;
+  }
+
+  .viewer__board {
+    grid-area: board;
+  }
+
+  .viewer__side {
+    grid-area: side;
+  }
+
+  .viewer__controls {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 760px) and (min-height: 600px) {
+  .viewer__moves {
+    flex: 1 1 0; /* takes the height the rest leaves beside the board, so a long list never makes the side taller */
+    min-height: 3em; /* but always shows at least two lines of moves */
+    max-height: none;
+  }
+}
+
+@media (min-width: 760px) and (max-height: 599px) {
+  .viewer__layout {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: 'board head' 'board side';
+    row-gap: 6px;
+    /* The dialog's height minus its frame and padding, so nothing falls below it. */
+    height: calc(94vh - var(--ui) * 6 - 42px);
+    height: calc(94dvh - var(--ui) * 6 - 42px);
+  }
+
+  .viewer__players,
+  .viewer__meta {
+    display: none; /* just the title beside the board */
+  }
+
+  .viewer__status {
+    font-size: inherit;
+  }
+
+  .viewer__moves {
+    max-height: none; /* the move list gets the height that is left, so it is the first thing to give way */
+  }
+
+  .viewer__foot {
+    flex-wrap: nowrap; /* the link's text wraps instead, so the button stays on screen */
+  }
+}
+
+@media (pointer: coarse), (max-width: 759px), (max-height: 599px) {
+  .viewer__keys {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ game against Stockfish (src/engine/chessbattle.js) */
+/* It uses the game viewer's layout above; these are only its own parts. */
+
+.battle__board {
+  position: relative;
+}
+
+.battle__board canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* 64 invisible buttons over the squares (the board's wooden frame is 6 of its 140 pixels on each side). */
+.battle__squares {
+  position: absolute;
+  inset: calc(100% * 6 / 140);
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
+
+.battle__squares button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.battle__squares button:focus-visible {
+  outline: 3px solid #2f5fb3;
+  outline-offset: -3px;
+}
+
+.battle__promote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.battle__promote[hidden] {
+  display: none;
+}
+
+.battle__moves {
+  min-height: 1.5em;
+}
+
+@media (max-width: 759px) {
+  .battle__promote {
+    order: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .sheet h1 {
+    font-size: calc(var(--ui) * 24);
+  }
+
+  .sheet h2 {
+    font-size: calc(var(--ui) * 16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    transition: none;
+  }
+
+  .textbox.is-done .textbox__arrow {
+    animation: none;
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "pixel-town-tests",
+  "private": true,
+  "type": "module",
+  "description": "Optional checks for the site: the chess rules (chess.test.mjs), the ARC grid helpers (arc.test.mjs) and a browser smoke test (smoke.mjs). The site itself has no dependencies.",
+  "scripts": {
+    "test": "node chess.test.mjs && node arc.test.mjs && node smoke.mjs",
+    "update-docs": "node smoke.mjs --update-docs"
+  },
+  "devDependencies": {
+    "chess.js": "^1.4.0",
+    "puppeteer-core": "^25.12.0"
+  }
+}

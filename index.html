@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Guilherme Bandeira Costa · a tiny pixel town</title>
+    <meta name="description" content="Guilherme Bandeira Costa's personal website: a tiny pixel-art town to walk around. Each building is part of my story: chess, Técnico, NeuralShift and my ARC-AGI research." />
+    <meta name="theme-color" content="#16161e" />
+    <meta name="color-scheme" content="dark" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Guilherme Bandeira Costa · a tiny pixel town" />
+    <meta property="og:url" content="https://guibandeiracosta.github.io/" />
+    <meta property="og:description" content="Walk around a tiny pixel-art town: chess, Técnico, NeuralShift and my ARC-AGI research." />
+    <meta property="og:image" content="https://guibandeiracosta.github.io/og-image.png" />
+    <meta property="og:image:width" content="1272" />
+    <meta property="og:image:height" content="668" />
+    <meta property="og:image:alt" content="A pixel-art town with four buildings: a graduation cap, a giant chess pawn, a giant Shift key and a puzzle on a turntable." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="fonts/m5x7.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="src/main.js"></script>
+  </head>
+  <body>
+    <main class="game">
+      <canvas id="screen" tabindex="0" role="application" aria-label="A pixel-art town. Use the arrow keys to walk, Enter or Space to read signs, and walk into a door to go inside.">
+        <p>This site is a little pixel-art town you can walk around.</p>
+      </canvas>
+
+      <div id="textbox" class="textbox" hidden>
+        <p class="textbox__text" aria-hidden="true"></p>
+        <span class="textbox__arrow" aria-hidden="true"></span>
+        <div class="textbox__choices" hidden></div>
+      </div>
+      <p id="announcer" class="sr-only" aria-live="polite"></p>
+      <p id="hint" class="hint plate" aria-hidden="true"></p>
+
+      <div id="touch" class="touch" aria-hidden="true" hidden>
+        <div class="dpad">
+          <svg viewBox="0 0 32 32" shape-rendering="crispEdges">
+            <path class="dpad__edge" d="M11 0h10v11h11v10H21v11H11V21H0V11h11z" />
+            <path class="dpad__face" d="M12 1h8v11h11v8H20v11h-8V20H1v-8h11z" />
+            <path class="dpad__arm dpad__arm--up" d="M12 1h8v11h-8z" />
+            <path class="dpad__arm dpad__arm--down" d="M12 20h8v11h-8z" />
+            <path class="dpad__arm dpad__arm--left" d="M1 12h11v8H1z" />
+            <path class="dpad__arm dpad__arm--right" d="M20 12h11v8H20z" />
+            <path class="dpad__arrow" d="M15 4h2v1h1v1h1v1h-6V6h1V5h1zM13 25h6v1h-1v1h-1v1h-2v-1h-1v-1h-1zM4 15h1v-1h1v-1h1v6H6v-1H5v-1H4zM25 13h1v1h1v1h1v2h-1v1h-1v1h-1z" />
+          </svg>
+        </div>
+        <div class="buttons">
+          <div class="button button-b">B</div>
+          <div class="button button-a">A</div>
+        </div>
+      </div>
+    </main>
+
+    <header class="hud">
+      <p id="site-name" class="plate hud__name">Guilherme Bandeira Costa</p>
+    </header>
+
+    <p id="page-error" class="page-error plate" role="alert" hidden></p>
+    <noscript><p class="page-error plate">This site is a small game and needs JavaScript to run.</p></noscript>
+    <script>
+      // ES modules don't load from a file opened directly from disk.
+      if (location.protocol === 'file:') {
+        const note = document.getElementById('page-error');
+        note.textContent = 'Open this site through a local web server (see README.md), e.g. run "python -m http.server" in this folder and visit http://localhost:8000';
+        note.hidden = false;
+      }
+    </script>
+  </body>
+</html>
